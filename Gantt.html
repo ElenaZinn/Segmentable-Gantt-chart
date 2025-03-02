@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>甘特图应用</title>
+    <style>
+        :root {
+            --primary-color: #4a6bdf;
+            --secondary-color: #e9ecef;
+            --border-color: #ced4da;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        
+        .content {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .task-form {
+            background-color: var(--secondary-color);
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        
+        button:hover {
+            background-color: #3a57c2;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+        }
+        
+        .btn-danger:hover {
+            background-color: #bd2130;
+        }
+        
+        .btn-add {
+            background-color: var(--success-color);
+        }
+        
+        .btn-add:hover {
+            background-color: #218838;
+        }
+        
+        .periods-container {
+            margin-top: 10px;
+        }
+        
+        .period-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        
+        .gantt-chart-container {
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .gantt-chart {
+            position: relative;
+            padding-top: 40px;
+            min-height: 200px;
+        }
+        
+        .timeline {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+        }
+        
+        .timeline-day {
+            flex: 0 0 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #777;
+        }
+        
+        .task-row {
+            display: flex;
+            height: 60px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        
+        .task-label {
+            width: 150px;
+            padding-right: 15px;
+            text-align: right;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        
+        .task-bars {
+            flex-grow: 1;
+            position: relative;
+            border-left: 1px solid var(--border-color);
+        }
+        
+        .task-bar {
+            position: absolute;
+            height: 30px;
+            top: 15px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding: 0 5px;
+            cursor: pointer;
+        }
+        
+        .task-summary {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: var(--secondary-color);
+            border-radius: 8px;
+        }
+        
+        .task-summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px dashed var(--border-color);
+        }
+        
+        .task-summary-item:last-child {
+            border-bottom: none;
+        }
+        
+        .color-picker {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 5px;
+        }
+        
+        .color-option {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        
+        .color-option.selected {
+            border-color: #333;
+        }
+        
+        .task-list {
+            margin-bottom: 20px;
+        }
+        
+        .task-list-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+            align-items: center;
+        }
+        
+        .task-color-dot {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .task-list-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .total-days {
+            font-weight: bold;
+            font-size: 18px;
+            margin-top: 10px;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>甘特图任务管理</h1>
+        </header>
+        
+        <div class="content">
+            <div class="task-form">
+                <h2>添加任务</h2>
+                <div class="form-group">
+                    <label for="taskName">任务名称</label>
+                    <input type="text" id="taskName" placeholder="输入任务名称">
+                </div>
+                
+                <div class="form-group">
+                    <label>任务颜色</label>
+                    <div class="color-picker" id="colorPicker">
+                        <div class="color-option selected" style="background-color: #4a6bdf;" data-color="#4a6bdf"></div>
+                        <div class="color-option" style="background-color: #28a745;" data-color="#28a745"></div>
+                        <div class="color-option" style="background-color: #dc3545;" data-color="#dc3545"></div>
+                        <div class="color-option" style="background-color: #fd7e14;" data-color="#fd7e14"></div>
+                        <div class="color-option" style="background-color: #6f42c1;" data-color="#6f42c1"></div>
+                        <div class="color-option" style="background-color: #20c997;" data-color="#20c997"></div>
+                        <div class="color-option" style="background-color: #17a2b8;" data-color="#17a2b8"></div>
+                        <div class="color-option" style="background-color: #6c757d;" data-color="#6c757d"></div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>时间段</label>
+                    <div id="periodsContainer" class="periods-container">
+                        <div class="period-item">
+                            <input type="date" class="period-start">
+                            <input type="date" class="period-end">
+                            <button class="btn-danger remove-period">删除</button>
+                        </div>
+                    </div>
+                    <button type="button" id="addPeriodBtn" class="btn-add">添加时间段</button>
+                </div>
+                
+                <button type="button" id="addTaskBtn">添加任务</button>
+            </div>
+            
+            <div class="task-list" id="taskList">
+                <h2>任务列表</h2>
+                <!-- 任务列表将在这里动态生成 -->
+            </div>
+            
+            <div class="gantt-chart-container">
+                <h2>甘特图</h2>
+                <div class="gantt-chart" id="ganttChart">
+                    <!-- 甘特图将在这里动态生成 -->
+                </div>
+            </div>
+            
+            <div class="task-summary" id="taskSummary">
+                <h2>任务时间统计</h2>
+                <!-- 任务时间统计将在这里动态生成 -->
+                <div class="total-days" id="totalDays">总计天数: 0</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 所有任务数据
+        let tasks = [];
+        let selectedColor = '#4a6bdf';
+        
+        // 初始化日期选择器为今天和一周后
+        document.querySelectorAll('.period-start, .period-end').forEach(input => {
+            const today = new Date();
+            if (input.classList.contains('period-start')) {
+                input.valueAsDate = today;
+            } else {
+                const nextWeek = new Date();
+                nextWeek.setDate(today.getDate() + 7);
+                input.valueAsDate = nextWeek;
+            }
+        });
+        
+        // 颜色选择器事件监听
+        document.querySelectorAll('.color-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedColor = this.getAttribute('data-color');
+            });
+        });
+        
+        // 添加新的时间段
+        document.getElementById('addPeriodBtn').addEventListener('click', function() {
+            const periodsContainer = document.getElementById('periodsContainer');
+            const periodItem = document.createElement('div');
+            periodItem.className = 'period-item';
+            
+            const startInput = document.createElement('input');
+            startInput.type = 'date';
+            startInput.className = 'period-start';
+            const today = new Date();
+            startInput.valueAsDate = today;
+            
+            const endInput = document.createElement('input');
+            endInput.type = 'date';
+            endInput.className = 'period-end';
+            const nextWeek = new Date();
+            nextWeek.setDate(today.getDate() + 7);
+            endInput.valueAsDate = nextWeek;
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'btn-danger remove-period';
+            removeBtn.textContent = '删除';
+            removeBtn.addEventListener('click', function() {
+                periodsContainer.removeChild(periodItem);
+            });
+            
+            periodItem.appendChild(startInput);
+            periodItem.appendChild(endInput);
+            periodItem.appendChild(removeBtn);
+            periodsContainer.appendChild(periodItem);
+        });
+        
+        // 初始化删除时间段按钮
+        document.querySelector('.remove-period').addEventListener('click', function() {
+            if (document.querySelectorAll('.period-item').length > 1) {
+                this.parentElement.remove();
+            }
+        });
+        
+        // 添加任务
+        document.getElementById('addTaskBtn').addEventListener('click', function() {
+            const taskName = document.getElementById('taskName').value.trim();
+            if (!taskName) {
+                alert('请输入任务名称');
+                return;
+            }
+            
+            const periodItems = document.querySelectorAll('.period-item');
+            const periods = [];
+            
+            for (const item of periodItems) {
+                const startDate = new Date(item.querySelector('.period-start').value);
+                const endDate = new Date(item.querySelector('.period-end').value);
+                
+                if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                    alert('请输入有效的日期');
+                    return;
+                }
+                
+                if (startDate > endDate) {
+                    alert('开始日期不能晚于结束日期');
+                    return;
+                }
+                
+                periods.push({
+                    start: startDate,
+                    end: endDate
+                });
+            }
+            
+            const task = {
+                id: Date.now(),
+                name: taskName,
+                color: selectedColor,
+                periods: periods
+            };
+            
+            tasks.push(task);
+            
+            // 重置表单
+            document.getElementById('taskName').value = '';
+            const periodsContainer = document.getElementById('periodsContainer');
+            while (periodsContainer.children.length > 1) {
+                periodsContainer.removeChild(periodsContainer.lastChild);
+            }
+            
+            document.querySelector('.period-start').valueAsDate = new Date();
+            const nextWeek = new Date();
+            nextWeek.setDate(new Date().getDate() + 7);
+            document.querySelector('.period-end').valueAsDate = nextWeek;
+            
+            updateUI();
+        });
+        
+        // 更新整个 UI
+        function updateUI() {
+            updateTaskList();
+            updateGanttChart();
+            updateTaskSummary();
+        }
+        
+        // 更新任务列表
+        function updateTaskList() {
+            const taskList = document.getElementById('taskList');
+            const taskListContent = document.createElement('div');
+            
+            tasks.forEach(task => {
+                const taskItem = document.createElement('div');
+                taskItem.className = 'task-list-item';
+                
+                const taskInfo = document.createElement('div');
+                taskInfo.innerHTML = `<span class="task-color-dot" style="background-color: ${task.color}"></span>${task.name}`;
+                
+                const taskActions = document.createElement('div');
+                taskActions.className = 'task-list-actions';
+                
+                const editBtn = document.createElement('button');
+                editBtn.textContent = '编辑';
+                editBtn.addEventListener('click', () => editTask(task.id));
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = '删除';
+                deleteBtn.className = 'btn-danger';
+                deleteBtn.addEventListener('click', () => deleteTask(task.id));
+                
+                taskActions.appendChild(editBtn);
+                taskActions.appendChild(deleteBtn);
+                
+                taskItem.appendChild(taskInfo);
+                taskItem.appendChild(taskActions);
+                
+                taskListContent.appendChild(taskItem);
+            });
+            
+            // 保留标题，替换内容
+            const title = taskList.querySelector('h2');
+            taskList.innerHTML = '';
+            taskList.appendChild(title);
+            taskList.appendChild(taskListContent);
+        }
+        
+        // 更新甘特图
+        function updateGanttChart() {
+            const ganttChart = document.getElementById('ganttChart');
+            ganttChart.innerHTML = '';
+            
+            if (tasks.length === 0) {
+                ganttChart.innerHTML = '<p>请添加任务以查看甘特图</p>';
+                return;
+            }
+            
+            // 找出时间范围
+            let minDate = new Date();
+            let maxDate = new Date();
+            
+            tasks.forEach(task => {
+                task.periods.forEach(period => {
+                    if (period.start < minDate) minDate = new Date(period.start);
+                    if (period.end > maxDate) maxDate = new Date(period.end);
+                });
+            });
+            
+            // 增加前后各 3 天的余量
+            minDate.setDate(minDate.getDate() - 3);
+            maxDate.setDate(maxDate.getDate() + 3);
+            
+            // 创建时间线
+            const timeline = document.createElement('div');
+            timeline.className = 'timeline';
+            
+            const totalDays = Math.floor((maxDate - minDate) / (1000 * 60 * 60 * 24)) + 1;
+            
+            for (let i = 0; i < totalDays; i++) {
+                const day = new Date(minDate);
+                day.setDate(minDate.getDate() + i);
+                
+                const timelineDay = document.createElement('div');
+                timelineDay.className = 'timeline-day';
+                timelineDay.textContent = `${day.getMonth() + 1}/${day.getDate()}`;
+                timeline.appendChild(timelineDay);
+            }
+            
+            ganttChart.appendChild(timeline);
+            
+            // 为每个任务创建一行
+            tasks.forEach(task => {
+                const taskRow = document.createElement('div');
+                taskRow.className = 'task-row';
+                
+                const taskLabel = document.createElement('div');
+                taskLabel.className = 'task-label';
+                taskLabel.textContent = task.name;
+                
+                const taskBars = document.createElement('div');
+                taskBars.className = 'task-bars';
+                
+                // 为每个时间段创建任务条
+                task.periods.forEach(period => {
+                    const startDiff = Math.floor((period.start - minDate) / (1000 * 60 * 60 * 24));
+                    const duration = Math.floor((period.end - period.start) / (1000 * 60 * 60 * 24)) + 1;
+                    
+                    const taskBar = document.createElement('div');
+                    taskBar.className = 'task-bar';
+                    taskBar.style.backgroundColor = task.color;
+                    taskBar.style.left = `${startDiff * 30}px`;
+                    taskBar.style.width = `${duration * 30}px`;
+                    taskBar.textContent = `${duration}天`;
+                    
+                    taskBar.title = `${task.name}: ${formatDate(period.start)} - ${formatDate(period.end)} (${duration}天)`;
+                    
+                    taskBars.appendChild(taskBar);
+                });
+                
+                taskRow.appendChild(taskLabel);
+                taskRow.appendChild(taskBars);
+                
+                ganttChart.appendChild(taskRow);
+            });
+        }
+        
+        // 更新任务时间统计
+        function updateTaskSummary() {
+            const taskSummary = document.getElementById('taskSummary');
+            const summaryContent = document.createElement('div');
+            
+            let totalDaysCount = 0;
+            
+            tasks.forEach(task => {
+                // 计算任务的总天数（去重）
+                const daysSet = new Set();
+                
+                task.periods.forEach(period => {
+                    const currentDate = new Date(period.start);
+                    while (currentDate <= period.end) {
+                        daysSet.add(formatDate(currentDate));
+                        currentDate.setDate(currentDate.getDate() + 1);
+                    }
+                });
+                
+                const taskDays = daysSet.size;
+                totalDaysCount += taskDays;
+                
+                const summaryItem = document.createElement('div');
+                summaryItem.className = 'task-summary-item';
+                summaryItem.innerHTML = `
+                    <div><span class="task-color-dot" style="background-color: ${task.color}"></span>${task.name}</div>
+                    <div>${taskDays}天</div>
+                `;
+                
+                summaryContent.appendChild(summaryItem);
+            });
+            
+            // 保留标题，替换内容
+            const title = taskSummary.querySelector('h2');
+            const totalDaysElement = taskSummary.querySelector('#totalDays');
+            totalDaysElement.textContent = `总计天数: ${totalDaysCount}`;
+            
+            taskSummary.innerHTML = '';
+            taskSummary.appendChild(title);
+            taskSummary.appendChild(summaryContent);
+            taskSummary.appendChild(totalDaysElement);
+        }
+        
+        // 编辑任务
+        function editTask(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+            
+            document.getElementById('taskName').value = task.name;
+            
+            // 选择对应的颜色
+            document.querySelectorAll('.color-option').forEach(option => {
+                if (option.getAttribute('data-color') === task.color) {
+                    option.click();
+                }
+            });
+            
+            // 清除现有的时间段
+            const periodsContainer = document.getElementById('periodsContainer');
+            while (periodsContainer.firstChild) {
+                periodsContainer.removeChild(periodsContainer.firstChild);
+            }
+            
+            // 添加任务的时间段
+            task.periods.forEach(period => {
+                const periodItem = document.createElement('div');
+                periodItem.className = 'period-item';
+                
+                const startInput = document.createElement('input');
+                startInput.type = 'date';
+                startInput.className = 'period-start';
+                startInput.valueAsDate = new Date(period.start);
+                
+                const endInput = document.createElement('input');
+                endInput.type = 'date';
+                endInput.className = 'period-end';
+                endInput.valueAsDate = new Date(period.end);
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'btn-danger remove-period';
+                removeBtn.textContent = '删除';
+                removeBtn.addEventListener('click', function() {
+                    if (periodsContainer.children.length > 1) {
+                        periodsContainer.removeChild(periodItem);
+                    }
+                });
+                
+                periodItem.appendChild(startInput);
+                periodItem.appendChild(endInput);
+                periodItem.appendChild(removeBtn);
+                
+                periodsContainer.appendChild(periodItem);
+            });
+            
+            // 改变添加按钮为更新按钮
+            const addTaskBtn = document.getElementById('addTaskBtn');
+            addTaskBtn.textContent = '更新任务';
+            
+            // 移除旧的点击事件
+            const newAddTaskBtn = addTaskBtn.cloneNode(true);
+            addTaskBtn.parentNode.replaceChild(newAddTaskBtn, addTaskBtn);
+            
+            // 添加更新事件
+            newAddTaskBtn.addEventListener('click', function() {
+                const taskName = document.getElementById('taskName').value.trim();
+                if (!taskName) {
+                    alert('请输入任务名称');
+                    return;
+                }
+                
+                const periodItems = document.querySelectorAll('.period-item');
+                const periods = [];
+                
+                for (const item of periodItems) {
+                    const startDate = new Date(item.querySelector('.period-start').value);
+                    const endDate = new Date(item.querySelector('.period-end').value);
+                    
+                    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                        alert('请输入有效的日期');
+                        return;
+                    }
+                    
+                    if (startDate > endDate) {
+                        alert('开始日期不能晚于结束日期');
+                        return;
+                    }
+                    
+                    periods.push({
+                        start: startDate,
+                        end: endDate
+                    });
+                }
+                
+                // 更新任务
+                task.name = taskName;
+                task.color = selectedColor;
+                task.periods = periods;
+                
+                // 重置表单
+                document.getElementById('taskName').value = '';
+                newAddTaskBtn.textContent = '添加任务';
+                
+                const periodsContainer = document.getElementById('periodsContainer');
+                while (periodsContainer.children.length > 0) {
+                    periodsContainer.removeChild(periodsContainer.lastChild);
+                }
+                
+                // 添加一个默认的时间段
+                const periodItem = document.createElement('div');
+                periodItem.className = 'period-item';
+                
+                const startInput = document.createElement('input');
+                startInput.type = 'date';
+                startInput.className = 'period-start';
+                startInput.valueAsDate = new Date();
+                
+                const endInput = document.createElement('input');
+                endInput.type = 'date';
+                endInput.className = 'period-end';
+                const nextWeek = new Date();
+                nextWeek.setDate(new Date().getDate() + 7);
+                endInput.valueAsDate = nextWeek;
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'btn-danger remove-period';
+                removeBtn.textContent = '删除';
+                removeBtn.addEventListener('click', function() {
+                    if (periodsContainer.children.length > 1) {
+                        periodsContainer.removeChild(periodItem);
+                    }
+                });
+                
+                periodItem.appendChild(startInput);
+                periodItem.appendChild(endInput);
+                periodItem.appendChild(removeBtn);
+                
+                periodsContainer.appendChild(periodItem);
+                
+                // 改回添加事件
+                const finalAddTaskBtn = newAddTaskBtn.cloneNode(true);
+                newAddTaskBtn.parentNode.replaceChild(finalAddTaskBtn, newAddTaskBtn);
+                finalAddTaskBtn.addEventListener('click', function() {
+                    const taskName = document.getElementById('taskName').value.trim();
+                    if (!taskName) {
+                        alert('请输入任务名称');
+                        return;
+                    }
+                    
+                    const periodItems = document.querySelectorAll('.period-item');
+                    const periods = [];
+                    
+                    for (const item of periodItems) {
+                        const startDate = new Date(item.querySelector('.period-start').value);
+                        const endDate = new Date(item.querySelector('.period-end').value);
+                        
+                        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                            alert('请输入有效的日期');
+                            return;
+                        }
+                        
+                        if (startDate > endDate) {
+                            alert('开始日期不能晚于结束日期');
+                            return;
+                        }
+                        
+                        periods.push({
+                            start: startDate,
+                            end: endDate
+                        });
+                    }
+                    
+                    const task = {
+                        id: Date.now(),
+                        name: taskName,
+                        color: selectedColor,
+                        periods: periods
+                    };
+                    
+                    tasks.push(task);
+                    
+                    // 重置表单
+                    document.getElementById('taskName').value = '';
+                    const periodsContainer = document.getElementById('periodsContainer');
+                    while (periodsContainer.children.length > 1) {
+                        periodsContainer.removeChild(periodsContainer.lastChild);
+                    }
+                    
+                    document.querySelector('.period-start').valueAsDate = new Date();
+                    const nextWeek = new Date();
+                    nextWeek.setDate(new Date().getDate() + 7);
+                    document.querySelector('.period-end').valueAsDate = nextWeek;
+                    
+                    updateUI();
+                });
+                
+                updateUI();
+            });
+            
+            // 滚动到表单顶部
+            document.querySelector('.task-form').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // 删除任务
+        function deleteTask(taskId) {
+            if (confirm('确定要删除该任务吗？')) {
+                tasks = tasks.filter(task => task.id !== taskId);
+                updateUI();
+            }
+        }
+        
+        // 格式化日期为 YYYY-MM-DD
+        function formatDate(date) {
+            const d = new Date(date);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        
+        // 初始化 UI
+        updateUI();
+    </script>
+</body>
+</html>
