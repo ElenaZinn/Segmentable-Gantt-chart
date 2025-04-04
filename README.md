@@ -1,6 +1,8 @@
 # Segmentable-Gantt-chart
 You can add many time zone for one case to avoid including the weekend in your task.
 
+Code by using DeepClaude.
+
 
 
 You can add multiple time segments for one task. So that the weekend can not be included in the total dates.
